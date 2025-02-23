@@ -9,8 +9,8 @@
 typedef struct {
     uint32_t wnd_size;
     uint32_t index_oldest; // index pointing to the oldest element    
-    bool* wnd_buffer;
-    uint32_t count;
+    bool* wnd_buffer;   // buffer to store the window of bits
+    uint32_t count; // number of 1s in the window
 } State;
 
 uint64_t wnd_bit_count_new(State* self, uint32_t wnd_size) {
@@ -34,6 +34,14 @@ void wnd_bit_count_destruct(State* self) {
 
 void wnd_bit_count_print(State* self) {
     // TODO: useful for debugging
+    printf("Window size: %d\n", self->wnd_size);
+    printf("Index oldest: %d\n", self->index_oldest);
+    printf("Count: %d\n", self->count);
+    printf("Window buffer: ");
+    for (uint32_t i=0; i<self->wnd_size; i++) {
+        printf("%d ", self->wnd_buffer[i]);
+    }
+    printf("\n");
 }
 
 uint32_t wnd_bit_count_next(State* self, bool item) {
@@ -43,7 +51,9 @@ uint32_t wnd_bit_count_next(State* self, bool item) {
     self->count += item;
 
     self->index_oldest += 1;
-    if (self->index_oldest == self->wnd_size) {
+    if (self->index_oldest == self->wnd_size) { 
+        // if index oldest equal to the wind size it is out of the buffer
+        // so we wrap aroung
         self->index_oldest = 0;
     }
     
