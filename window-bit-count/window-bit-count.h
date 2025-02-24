@@ -56,7 +56,8 @@ uint32_t wnd_bit_count_next(State* self, bool item) {
         // so we wrap aroung
         self->index_oldest = 0;
     }
-    
+
+    // return the number of 1s in the window
     return self->count;
 }
 

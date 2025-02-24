@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include "window-bit-count.h"
 
-#define W 10 // window size
-#define N 100 // stream length
+#define W 4 // window size
+#define N 12 // stream length
 
 int main() {
     printf("**** TEST: Bit counting over a sliding window *****\n");

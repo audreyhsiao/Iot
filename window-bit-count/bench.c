@@ -6,8 +6,8 @@
 #include "../utils.h"
 #include "window-bit-count.h"
 
-#define W 1000000 // window size
-#define N 1000000000 // stream length
+#define W 4 // window size
+#define N 400// stream length
 
 int main() {
     char scratch[100];
