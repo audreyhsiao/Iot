@@ -5,9 +5,9 @@
 #include "window-bit-count-apx.h"
 #include "../window-bit-count/window-bit-count.h"
 
-#define W 200 // window size
-#define N 1000 // stream length
-#define K 100 // relative error = 1 / K
+#define W 8 // window size
+#define N 15 // stream length
+#define K 2 // relative error = 1 / K
 
 int main() {
     printf("**** TEST: Bit counting over a sliding window (approximate) *****\n");
@@ -28,6 +28,7 @@ int main() {
 
         for (uint32_t i=1; i<=N; i++) {
             bool item = true; //i % 2;
+            printf("Current item: %u\n", item);
             last_output = wnd_bit_count_next(&state, item);
             last_output_apx = wnd_bit_count_apx_next(&state_apx, item);
             wnd_bit_count_apx_print(&state_apx);
