@@ -30,18 +30,20 @@ int main() {
             bool item = true; //i % 2;
             last_output = wnd_bit_count_next(&state, item);
             last_output_apx = wnd_bit_count_apx_next(&state_apx, item);
-            //wnd_bit_count_apx_print(&state_apx);
+            wnd_bit_count_apx_print(&state_apx);
 
-            //printf("last output (precise) = %u\n", last_output);
-            //printf("last output (approximate) = %u\n", last_output_apx);
-            //printf("\n");
+            printf("last output (precise) = %u\n", last_output);
+            printf("last output (approximate) = %u\n", last_output_apx);
+            printf("\n");
 
             assert(last_output >= last_output_apx);
             uint32_t error_abs = last_output - last_output_apx;
+            printf("error_abs: %u\n", error_abs);
+            printf("K: %u\n", K);
             assert(K * error_abs <= last_output);
-            //double error_rel = ((double) error_abs) / last_output;
-            //printf("K = %u, eps = %lf: x = %u, x_est = %u, error_rel = %lf\n",
-            //    K, eps, last_output, last_output_apx, error_rel);
+            double error_rel = ((double) error_abs) / last_output;
+            printf("K = %u, eps = %lf: x = %u, x_est = %u, error_rel = %lf\n",
+               K, eps, last_output, last_output_apx, error_rel);
         }
 
         wnd_bit_count_apx_destruct(&state_apx);

@@ -38,6 +38,7 @@ static inline void* apx_pool_alloc(size_t size) {
   }
   void* ptr = g_base_ptr + g_used_offset;
   g_used_offset += size;
+  //printf("Allocated memory at %p, size = %zu\n", ptr, size);
   return ptr;
 }
 // the offset of the used memory
@@ -62,6 +63,7 @@ uint64_t wnd_bit_count_apx_new(StateApx* self, uint32_t wnd_size, uint32_t k) {
   assert(wnd_size >= 1);
   assert(k >= 1);
   init_memory_block();  // initialize the memory block
+
   self->wnd_size = wnd_size;
   self->k = k;
   self->num_buckets = 0;
@@ -71,8 +73,8 @@ uint64_t wnd_bit_count_apx_new(StateApx* self, uint32_t wnd_size, uint32_t k) {
   uint32_t total_size =
       3 * wnd_size;  // 3 * wnd_size is the total size of the memory block for
                      // bucket_counts, bucket_sizes, bucket_indices
-  uint32_t* memory_block = apx_pool_alloc(
-      total_size * sizeof(uint32_t));  // allocate memory for this memory block
+  uint32_t* memory_block = (uint32_t*)apx_pool_alloc(
+    total_size * sizeof(uint32_t));  // allocate memory for this memory block
 
   // Assign pointers to the appropriate sections of the memory block
   self->bucket_counts = memory_block;
@@ -86,18 +88,21 @@ uint64_t wnd_bit_count_apx_new(StateApx* self, uint32_t wnd_size, uint32_t k) {
   }
 
   // Return the total number of bytes allocated on the heap
+  printf("Total memory allocated: %zu bytes\n", sizeof(StateApx) + total_size * sizeof(uint32_t));
   return sizeof(StateApx) + total_size * sizeof(uint32_t);
 }
 
 void wnd_bit_count_apx_destruct(StateApx* self) {
   // TODO not sure
-  (void)self;
+  free(g_base_ptr);
+
 }
 
 void wnd_bit_count_apx_print(StateApx* self) {
   printf("window size: %u, k: %u\n", self->wnd_size, self->k);
   printf("Bucket state:\n");
   for (uint32_t i = 0; i < self->num_buckets; i++) {
+    printf(" ");
     printf("Bucket %u: counts = %u, sizes = %u, indices = %u\n", i,
            self->bucket_counts[i], self->bucket_sizes[i],
            self->bucket_indices[i]);
@@ -179,14 +184,16 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
     }
   }
  uint32_t approx_count = 0;
-
-    for (uint32_t i = 0; i < self->num_buckets; i++) {
+if (self->num_buckets == 1) {
+    approx_count = self->bucket_sizes[0];
+} else if (self->num_buckets > 1) {
+    for (uint32_t i = 1; i < self->num_buckets; i++) {
         approx_count += self->bucket_sizes[i];
     }
-
-    return approx_count;
+    approx_count += self->bucket_sizes[0] / 2;
 }
 
-
+  return approx_count;
+}
 
 #endif  // _WINDOW_BIT_COUNT_APX_
