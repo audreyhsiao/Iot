@@ -49,7 +49,7 @@ typedef struct {
   uint32_t wnd_size;
   uint32_t k;
 
-  uint32_t* bucket_counts;   // number of 1's that have been seen in the bucket
+  //uint32_t* bucket_counts;   // number of 1's that have been seen in the bucket
   uint32_t* bucket_sizes;    // how many items are in the bucket
   uint32_t* bucket_indices;  // the index of the bucket
 
@@ -65,26 +65,27 @@ uint64_t wnd_bit_count_apx_new(StateApx* self, uint32_t wnd_size, uint32_t k) {
   assert(wnd_size >= 1);
   assert(k >= 1);
   //init_memory_block();  // initialize the memory block
-
+  wnd_size = (k+2) * (int)ceil(log((wnd_size / k) + 1));
   self->wnd_size = wnd_size;
   self->k = k;
   self->num_buckets = 0;
   self->current_time = 0;
 
   // Allocate a single block of memory for all arrays
-  uint32_t total_size =
-      3 * wnd_size;  // 3 * wnd_size is the total size of the memory block for
+  uint32_t total_size = 2 * self->wnd_size;  // 2 * wnd_size is the total size of the memory block for
                      // bucket_counts, bucket_sizes, bucket_indices
   uint32_t* memory_block = (uint32_t*)apx_pool_alloc(
       total_size * sizeof(uint32_t));  // allocate memory for this memory block
 
   // Assign pointers to the appropriate sections of the memory block
-  self->bucket_counts = memory_block;
-  self->bucket_sizes = memory_block + wnd_size;
-  self->bucket_indices = memory_block + 2 * wnd_size;
+  //self->bucket_counts = memory_block;
+  //self->bucket_sizes = memory_block + wnd_size;
+  //self->bucket_indices = memory_block + 2 * wnd_size;
+  self->bucket_sizes = memory_block;
+  self->bucket_indices = memory_block + self->wnd_size;
 
   for (uint32_t i = 0; i < wnd_size; i++) {
-    self->bucket_counts[i] = 0;
+    //self->bucket_counts[i] = 0;
     self->bucket_sizes[i] = 0;
     self->bucket_indices[i] = 0;
   }
@@ -105,8 +106,13 @@ void wnd_bit_count_apx_print(StateApx* self) {
   printf("Bucket state:\n");
   for (uint32_t i = 0; i < self->num_buckets; i++) {
     printf(" ");
+    /*
     printf("Bucket %u: counts = %u, sizes = %u, indices = %u\n", i,
            self->bucket_counts[i], self->bucket_sizes[i],
+           self->bucket_indices[i]);
+    */
+    printf("Bucket %u:  sizes = %u, indices = %u\n", i,
+           self->bucket_sizes[i],
            self->bucket_indices[i]);
   }
   printf("Current time: %u\n", self->current_time);
@@ -126,7 +132,7 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
       // move index = 1 to index = 0, etc. etc.
       for (uint32_t i = 0; i < self->num_buckets; i++) {
         self->bucket_indices[i] = self->bucket_indices[i + 1];
-        self->bucket_counts[i] = self->bucket_counts[i + 1];
+        //self->bucket_counts[i] = self->bucket_counts[i + 1];
         self->bucket_sizes[i] = self->bucket_sizes[i + 1];
       }
     } else {
@@ -138,7 +144,7 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
   if (item) {
     // build a size 1 bucket
     uint32_t new_bucket_index = self->num_buckets;
-    self->bucket_counts[new_bucket_index] = 1;
+    //self->bucket_counts[new_bucket_index] = 1;
     self->bucket_sizes[new_bucket_index] = 1;
     self->bucket_indices[new_bucket_index] = self->current_time;
     self->num_buckets++;
@@ -177,13 +183,13 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
       for (int i = start_index + 1; i < (int)(self->num_buckets - 1); i++) {
         self->bucket_sizes[i] = self->bucket_sizes[i + 1];
         self->bucket_indices[i] = self->bucket_indices[i + 1];
-        self->bucket_counts[i] = self->bucket_counts[i + 1];
+        //self->bucket_counts[i] = self->bucket_counts[i + 1];
       }
       self->num_buckets -= 1;
       // put the new bucket at the start_index
       self->bucket_sizes[start_index] = new_size;
       self->bucket_indices[start_index] = new_ts;
-      self->bucket_counts[start_index] = count;
+      //self->bucket_counts[start_index] = count;
       N_MERGES++;
       merge_occurred = true;
       first_run++;
