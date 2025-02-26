@@ -10,9 +10,9 @@
 
 uint64_t N_MERGES = 0;  // keep track of how many bucket merges occur
 
-#ifndef APX_POOL_SIZE
-#define APX_POOL_SIZE (1 << 20)  // 1 MB
-#endif
+//#ifndef APX_POOL_SIZE
+//#define APX_POOL_SIZE (1 << 20)  // 1 MB
+//#endif
 /*
     TODO: You can add code here.
 */
@@ -22,6 +22,7 @@ static uint8_t* g_base_ptr = NULL;  // the base pointer of the memory block
 static size_t g_total_size = 0;     // the total size of the memory block
 static size_t g_used_offset = 0;
 
+/*
 static inline void init_memory_block(void) {
   g_base_ptr = (uint8_t*)malloc(APX_POOL_SIZE);
   if (!g_base_ptr) {
@@ -30,9 +31,10 @@ static inline void init_memory_block(void) {
   g_total_size = APX_POOL_SIZE;
   g_used_offset = 0;
 }
+*/
 
 static inline void* apx_pool_alloc(size_t size) {
-  void* ptr = (uint8_t*)malloc(size);
+  void* ptr = (uint32_t*)malloc(size);
   if (!ptr) {
     fprintf(stderr, "Failed to allocate memory for the memory pool.\n");
   }
@@ -124,6 +126,8 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
       // move index = 1 to index = 0, etc. etc.
       for (uint32_t i = 0; i < self->num_buckets; i++) {
         self->bucket_indices[i] = self->bucket_indices[i + 1];
+        self->bucket_counts[i] = self->bucket_counts[i + 1];
+        self->bucket_sizes[i] = self->bucket_sizes[i + 1];
       }
     } else {
       break;
@@ -139,12 +143,14 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
     self->bucket_indices[new_bucket_index] = self->current_time;
     self->num_buckets++;
   }
-
   // check if there are k+2 buckets that have the same size
   bool merge_occurred = true;
+  int first_run = 0;
+  int tail_index;
   while (merge_occurred && self->num_buckets >= 0) {
     merge_occurred = false;
-    int tail_index = self->num_buckets - 1;
+    if(first_run == 0)
+      tail_index = self->num_buckets - 1;
     if (tail_index <= 0) break;
     uint32_t tail_size = self->bucket_sizes[tail_index];
 
@@ -156,8 +162,7 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
       tail_index--;
     }
 
-    if (count > self->k + 2) {
-      printf("MERGE OCCURRED\n");
+    if (count >= self->k + 2) {
       // start_index ~ tail_index need to be merged
       int start_index = tail_index + 1;
 
@@ -166,23 +171,23 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
       uint32_t old_ts2 = self->bucket_indices[start_index + 1];
 
       uint32_t new_size = 2 * tail_size;
-      uint32_t new_ts = (old_ts > old_ts2) ? old_ts : old_ts2;
+      //uint32_t new_ts = (old_ts > old_ts2) ? old_ts : old_ts2;
+      uint32_t new_ts = (old_ts < old_ts2) ? old_ts : old_ts2;
       // remove the old buckets
-      for (int i = start_index; i < (int)(self->num_buckets - 2); i++) {
-        self->bucket_sizes[i] = self->bucket_sizes[i + 2];
-        self->bucket_indices[i] = self->bucket_indices[i + 2];
-        self->bucket_counts[i] = self->bucket_counts[i + 2];
+      for (int i = start_index + 1; i < (int)(self->num_buckets - 1); i++) {
+        self->bucket_sizes[i] = self->bucket_sizes[i + 1];
+        self->bucket_indices[i] = self->bucket_indices[i + 1];
+        self->bucket_counts[i] = self->bucket_counts[i + 1];
       }
-      self->num_buckets -= 2;
-
+      self->num_buckets -= 1;
       // put the new bucket at the start_index
       self->bucket_sizes[start_index] = new_size;
       self->bucket_indices[start_index] = new_ts;
       self->bucket_counts[start_index] = count;
-
       N_MERGES++;
-
       merge_occurred = true;
+      first_run++;
+      tail_index++;
     }
   }
 
