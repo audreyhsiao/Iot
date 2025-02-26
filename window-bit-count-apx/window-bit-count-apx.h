@@ -198,9 +198,8 @@ uint32_t wnd_bit_count_apx_next(StateApx* self, bool item) {
   else if (self->num_buckets > 1) {
     for (uint32_t i = 1; i < self->num_buckets; i++) {
       approx_count += self->bucket_sizes[i];
-     
     }
-    approx_count += (self->bucket_sizes[0] + 1) / 2;
+    approx_count += 1;
   }
 
   return approx_count ;
